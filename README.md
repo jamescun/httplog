@@ -2,7 +2,7 @@
 
 httplog is a command line tool that launches a local HTTP server that logs all requests it receives, replying with a canned response.
 
-![screenshot of httplog](extra/screenshot.png)
+<img src="extra/screenshot.png" width="678" alt="screenshot of httplog">
 
 ## Install
 
