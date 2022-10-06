@@ -12,6 +12,11 @@ Either download a [pre-built binary](https://github.com/jamescun/httplog/release
 go install github.com/jamescun/httplog
 ```
 
+Alternatively on macOS, you can install httplog using the [Homebrew](https://brew.sh) package manager:
+
+```sh
+brew install jamescun/formulas/httplog
+```
 
 ## Usage
 
