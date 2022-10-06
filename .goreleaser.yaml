@@ -19,3 +19,15 @@ builds:
     - -trimpath
   ldflags:
     - -s -w -X main.Version={{.Version}}
+
+brews:
+  - homepage: https://github.com/jamescun/httplog
+    description: httplog is a command line tool that logs HTTP requests
+    license: MIT
+    folder: Formula
+    commit_author:
+      name: James Cunningham
+      email: git@jamescun.com
+    tap:
+      owner: jamescun
+      name: homebrew-formulas
