@@ -38,6 +38,7 @@ Options:
                                 to all requests (default 200)
   --json                        log all requests as JSON rather than human
                                 readable text
+  --tls-self-cert               enable TLS with a self-signed certificate
 ```
 
 ### Examples

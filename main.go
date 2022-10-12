@@ -1,10 +1,18 @@
 package main
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"flag"
 	"fmt"
+	"math/big"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/jamescun/httplog/httplog"
 )
@@ -17,6 +25,7 @@ var (
 	responseBody = flag.String("response", "", "configure the canned body sent in response to all requests")
 	responseCode = flag.Int("response-code", 200, "configure the HTTP status code sent in response requests")
 	logJSON      = flag.Bool("json", false, "log all requests as JSON rather than human readable text")
+	tlsSelfCert  = flag.Bool("tls-self-cert", false, "enable TLS with a self-signed certificate")
 )
 
 const Usage = `httplog v%s
@@ -36,6 +45,7 @@ Options:
                                 to all requests (default 200)
   --json                        log all requests as JSON rather than human
                                 readable text
+  --tls-self-cert               enable TLS with a self-signed certificate
 `
 
 func main() {
@@ -61,10 +71,64 @@ func main() {
 		Handler: srv,
 	}
 
+	if *tlsSelfCert {
+		cfg, err := generateSelfCertConfig()
+		if err != nil {
+			exitError(1, "could not generate self signed certificate: %s", err)
+		}
+
+		s.TLSConfig = cfg
+	}
+
 	fmt.Fprintf(os.Stderr, "server listening on %s...\n", *listenAddr)
 
-	if err := s.ListenAndServe(); err != nil {
-		fmt.Fprintln(os.Stderr, "server error:", err)
-		os.Exit(1)
+	if s.TLSConfig != nil {
+		if err := s.ListenAndServeTLS("", ""); err != nil {
+			exitError(1, "server: %s", err)
+		}
+	} else {
+		if err := s.ListenAndServe(); err != nil {
+			exitError(1, "server: %s", err)
+		}
 	}
+}
+
+func exitError(code int, format string, args ...any) {
+	fmt.Fprintf(os.Stderr, "error: "+format+"\n", args...)
+	os.Exit(1)
+}
+
+func generateSelfCertConfig() (*tls.Config, error) {
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, fmt.Errorf("private key: %w", err)
+	}
+
+	cert := &x509.Certificate{
+		Version:      3,
+		SerialNumber: big.NewInt(1),
+		Issuer:       pkix.Name{CommonName: "httplog"},
+		Subject:      pkix.Name{CommonName: "httplog"},
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(720 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		DNSNames:     []string{"httplog"},
+	}
+
+	bytes, err := x509.CreateCertificate(rand.Reader, cert, cert, privateKey.Public(), privateKey)
+	if err != nil {
+		return nil, fmt.Errorf("sign: %w", err)
+	}
+
+	cfg := &tls.Config{
+		Certificates: []tls.Certificate{
+			{
+				Certificate: [][]byte{bytes},
+				PrivateKey:  privateKey,
+			},
+		},
+	}
+
+	return cfg, nil
 }
