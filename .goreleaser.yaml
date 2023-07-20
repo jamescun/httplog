@@ -31,3 +31,4 @@ brews:
     tap:
       owner: jamescun
       name: homebrew-formulas
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
