@@ -21,7 +21,7 @@ brew install jamescun/formulas/httplog
 ## Usage
 
 ```
-httplog v1.0.0
+httplog v1.0.2
 
 httplog is a command line tool that launches a local HTTP server that logs all
 requests it receives, replying with a canned response.
@@ -36,6 +36,8 @@ Options:
                                 all requests (default none)
   --response-code  <code>       configure the HTTP status code sent in response
                                 to all requests (default 200)
+  --response-header <X=Y>       configure one or more headers to be sent in the
+                                response, may be specified more than once
   --json                        log all requests as JSON rather than human
                                 readable text
   --tls-self-cert               enable TLS with a self-signed certificate
@@ -54,7 +56,7 @@ $ curl -v http://localhost:8080
 HTTP/1.1 500 Internal Server Error
 ```
 
-To configure the response body, use the `--response <text>` option, i.e. to response the text `hello world` to all requests:
+To configure the response body, use the `--response <text>` option, i.e. to responsd the text `hello world` to all requests:
 
 ```sh
 $ httplog --response "hello world"

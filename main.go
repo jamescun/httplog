@@ -7,12 +7,13 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"flag"
 	"fmt"
 	"math/big"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/spf13/pflag"
 
 	"github.com/jamescun/httplog/httplog"
 )
@@ -21,11 +22,12 @@ import (
 var Version = "0.0.0"
 
 var (
-	listenAddr   = flag.String("listen", "localhost:8080", "configure the listening address for the HTTP server")
-	responseBody = flag.String("response", "", "configure the canned body sent in response to all requests")
-	responseCode = flag.Int("response-code", 200, "configure the HTTP status code sent in response requests")
-	logJSON      = flag.Bool("json", false, "log all requests as JSON rather than human readable text")
-	tlsSelfCert  = flag.Bool("tls-self-cert", false, "enable TLS with a self-signed certificate")
+	listenAddr     = pflag.String("listen", "localhost:8080", "configure the listening address for the HTTP server")
+	responseBody   = pflag.String("response", "", "configure the canned body sent in response to all requests")
+	responseCode   = pflag.Int("response-code", 200, "configure the HTTP status code sent in response requests")
+	responseHeader = pflag.StringArray("response-header", nil, "configure one or more headers to be sent in the response")
+	logJSON        = pflag.Bool("json", false, "log all requests as JSON rather than human readable text")
+	tlsSelfCert    = pflag.Bool("tls-self-cert", false, "enable TLS with a self-signed certificate")
 )
 
 const Usage = `httplog v%s
@@ -43,14 +45,16 @@ Options:
                                 all requests (default none)
   --response-code  <code>       configure the HTTP status code sent in response
                                 to all requests (default 200)
+  --response-header <X=Y>       configure one or more headers to be sent in the
+                                response, may be specified more than once
   --json                        log all requests as JSON rather than human
                                 readable text
   --tls-self-cert               enable TLS with a self-signed certificate
 `
 
 func main() {
-	flag.Usage = func() { fmt.Fprintf(os.Stderr, Usage, Version) }
-	flag.Parse()
+	pflag.Usage = func() { fmt.Fprintf(os.Stderr, Usage, Version) }
+	pflag.Parse()
 
 	srv := httplog.NewServer(128)
 
@@ -59,6 +63,8 @@ func main() {
 	if *responseBody != "" {
 		srv.ResponseBody = []byte(*responseBody)
 	}
+
+	srv.ResponseHeaders = httplog.ParseHeaders(*responseHeader)
 
 	if *logJSON {
 		go httplog.JSONLogger(os.Stdout, srv.Requests())

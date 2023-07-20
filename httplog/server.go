@@ -5,6 +5,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -16,6 +17,10 @@ type Server struct {
 	// ResponseBody is the contents sent in response to all requests, if not
 	// set, no response body is used.
 	ResponseBody []byte
+
+	// ResponseHEaders are additional HTTP headers to be sent in response to
+	// all requests.
+	ResponseHeaders http.Header
 
 	requests chan *Request
 }
@@ -61,6 +66,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	s.requests <- req
 
+	if len(s.ResponseHeaders) > 0 {
+		for key, values := range s.ResponseHeaders {
+			for _, value := range values {
+				r.Header.Set(key, value)
+			}
+		}
+	}
+
 	if s.ResponseCode > 0 {
 		w.WriteHeader(s.ResponseCode)
 	}
@@ -68,4 +81,35 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if len(s.ResponseBody) > 0 {
 		w.Write(s.ResponseBody)
 	}
+}
+
+// ParseHeaders unpacks a slice of KEY=VALUE formatted strings into a set of
+// HTTP Headers. If a value cannot be split into KEY=VALUE, it is ignored.
+func ParseHeaders(headers []string) http.Header {
+	if len(headers) < 1 {
+		return nil
+	}
+
+	res := http.Header{}
+
+	for _, header := range headers {
+		key, value := splitKeyValue(header, '=')
+		if value != "" {
+			res.Add(key, value)
+		}
+	}
+
+	return res
+}
+
+func splitKeyValue(s string, sep byte) (key, value string) {
+	i := strings.IndexByte(s, sep)
+	if i > -1 {
+		key = s[:i]
+		value = s[i+1:]
+	} else {
+		key = s
+	}
+
+	return
 }
