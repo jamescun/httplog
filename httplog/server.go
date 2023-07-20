@@ -10,17 +10,9 @@ import (
 )
 
 type Server struct {
-	// ResponseCode is the HTTP Status Code sent in response to all requests,
-	// if not set, HTTP 200 is used.
-	ResponseCode int
-
-	// ResponseBody is the contents sent in response to all requests, if not
-	// set, no response body is used.
-	ResponseBody []byte
-
-	// ResponseHEaders are additional HTTP headers to be sent in response to
-	// all requests.
-	ResponseHeaders http.Header
+	// Handler is the HTTP Handler executed for all requests. If not
+	// configured, an HTTP 200 will be sent in response to all requests.
+	Handler http.Handler
 
 	requests chan *Request
 }
@@ -66,20 +58,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	s.requests <- req
 
-	if len(s.ResponseHeaders) > 0 {
-		for key, values := range s.ResponseHeaders {
-			for _, value := range values {
-				r.Header.Set(key, value)
-			}
-		}
-	}
-
-	if s.ResponseCode > 0 {
-		w.WriteHeader(s.ResponseCode)
-	}
-
-	if len(s.ResponseBody) > 0 {
-		w.Write(s.ResponseBody)
+	if s.Handler != nil {
+		s.Handler.ServeHTTP(w, r)
+	} else {
+		w.WriteHeader(http.StatusOK)
 	}
 }
 

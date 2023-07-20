@@ -21,7 +21,7 @@ brew install jamescun/formulas/httplog
 ## Usage
 
 ```
-httplog v1.0.2
+httplog v1.0.3
 
 httplog is a command line tool that launches a local HTTP server that logs all
 requests it receives, replying with a canned response.
@@ -38,6 +38,8 @@ Options:
                                 to all requests (default 200)
   --response-header <X=Y>       configure one or more headers to be sent in the
                                 response, may be specified more than once
+  --responses       <file>      configure multiple responses using a
+                                Responsefile (recommended)
   --json                        log all requests as JSON rather than human
                                 readable text
   --tls-self-cert               enable TLS with a self-signed certificate
@@ -66,3 +68,9 @@ Hello World
 ```
 
 If you would prefer JSON output, rather than human-readable text, use the `--json` option.
+
+## Responsefile
+
+A Responsefile is a YAML file that configures HTTPLog with multiple canned responses, as well as defaults and error handling.
+
+See [Responsefile.example](Responsefile.example) for an example Responsefile.

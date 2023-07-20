@@ -16,6 +16,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/jamescun/httplog/httplog"
+	"github.com/jamescun/httplog/responses"
 )
 
 // Version is the semantic release version of this build of httplog.
@@ -26,6 +27,7 @@ var (
 	responseBody   = pflag.String("response", "", "configure the canned body sent in response to all requests")
 	responseCode   = pflag.Int("response-code", 200, "configure the HTTP status code sent in response requests")
 	responseHeader = pflag.StringArray("response-header", nil, "configure one or more headers to be sent in the response")
+	responseFile   = pflag.String("responses", "", "ponfigure multiple responses using a Responsefile")
 	logJSON        = pflag.Bool("json", false, "log all requests as JSON rather than human readable text")
 	tlsSelfCert    = pflag.Bool("tls-self-cert", false, "enable TLS with a self-signed certificate")
 )
@@ -47,6 +49,8 @@ Options:
                                 to all requests (default 200)
   --response-header <X=Y>       configure one or more headers to be sent in the
                                 response, may be specified more than once
+  --responses       <file>      configure multiple responses using a
+                                Responsefile (recommended)
   --json                        log all requests as JSON rather than human
                                 readable text
   --tls-self-cert               enable TLS with a self-signed certificate
@@ -58,13 +62,24 @@ func main() {
 
 	srv := httplog.NewServer(128)
 
-	srv.ResponseCode = *responseCode
+	if *responseFile != "" {
+		file, err := responses.ReadFile(*responseFile)
+		if err != nil {
+			exitError(2, "could not read Responsefile: %s", err)
+		}
 
-	if *responseBody != "" {
-		srv.ResponseBody = []byte(*responseBody)
+		srv.Handler = file.Handler()
+	} else {
+		r := &responses.File{
+			NotFound: &responses.Response{
+				Status:  *responseCode,
+				Headers: httplog.ParseHeaders(*responseHeader),
+				Body:    *responseBody,
+			},
+		}
+
+		srv.Handler = r.Handler()
 	}
-
-	srv.ResponseHeaders = httplog.ParseHeaders(*responseHeader)
 
 	if *logJSON {
 		go httplog.JSONLogger(os.Stdout, srv.Requests())

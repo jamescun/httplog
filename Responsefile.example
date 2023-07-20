@@ -1,0 +1,23 @@
+responses:
+- method: GET
+  path: /foo/bar
+  status: 200
+  headers:
+    "Content-Type": [ "application/json" ]
+  body: >-
+    {"foo": "bar"}
+
+
+notFound:
+  status: 404
+  headers:
+    "Content-Type": [ "application/json" ]
+  body: >-
+    {"error":{"code": "NOT_FOUND"}}
+
+methodNotAllowed:
+  status: 405
+  headers:
+    "Content-Type": [ "application/json" ]
+  body: >-
+    {"error":{"code": "METHOD_NOT_ALLOWED"}}
